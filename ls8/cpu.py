@@ -11,6 +11,10 @@ PUSH = 0b01000101
 POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
+CMP = 0b10100111
+JEQ = 0b01010101
+JNE = 0b01010110
+JMP = 0b01010100
 
 class CPU:
     """Main CPU class."""
@@ -22,6 +26,7 @@ class CPU:
         self.ram = [0] * 256
         self.pc = 0
         self.running = True
+        self.flags = 0b00000000
 
     def load(self, file_name):
         """Load a program into memory."""
@@ -53,7 +58,7 @@ class CPU:
                     if command == '':
                         continue
                     instruction = int(command, 2)
-                    self.ram[address] = instruction
+                    self.ram_write(address, instruction)
                     address += 1
 
         except FileNotFoundError:
@@ -70,6 +75,18 @@ class CPU:
         #elif op == "SUB": etc
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+
+            #if equal
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.flags = 0b00000001
+            #if reg_a less than b
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.flags = 0b00000100
+            #if reg_a greater than b
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.flags = 0b00000010
+            
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -209,6 +226,46 @@ class CPU:
                 #go to the return address, and set the pc to return address
                 self.pc = returnAddress 
 
+            elif instructionRegister == JMP:
+                #get register num
+                regNum = self.ram[self.pc + 1]
+
+                #get the address to jump to
+                address = self.reg[regNum]
+
+                #set program counter to the address
+                self.pc = address
+
+            elif instructionRegister == CMP:
+                self.alu("CMP", operand_a, operand_b)
+                self.pc += 3
+            
+            elif instructionRegister == JEQ:
+                if self.flags == 0b00000001:
+                     #get register num
+                    regNum = self.ram[self.pc + 1]
+
+                    #get the address to jump to
+                    address = self.reg[regNum]
+
+                    #set program counter to the address
+                    self.pc = address
+                else:
+                    self.pc += 2
+            elif instructionRegister == JNE:
+                if not self.flags == 0b00000001:
+                    #get register num
+                    regNum = self.ram[self.pc + 1]
+
+                    #get the address to jump to
+                    address = self.reg[regNum]
+
+                    #set program counter to the address
+                    self.pc = address
+                else:
+                    self.pc += 2
             else:
                 self.pc += 1
+        print("-----------")
+        print(self.ram)
            
