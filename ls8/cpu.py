@@ -6,6 +6,11 @@ LDI = 0b10000010
 PRN = 0b01000111
 HLT = 0b00000001
 MUL = 0b10100010
+ADD = 0b10100000
+PUSH = 0b01000101
+POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
 
 class CPU:
     """Main CPU class."""
@@ -13,6 +18,7 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.reg = [0] * 8
+        self.reg[7] = 0xF4
         self.ram = [0] * 256
         self.pc = 0
         self.running = True
@@ -116,6 +122,8 @@ class CPU:
                 self.ldi(operand_a, operand_b)
                 self.pc += 3
 
+                #print('Writing ', operand_b, 'to register num', operand_a)
+
             elif instructionRegister == PRN:
                 self.prn(operand_a)
                 self.pc += 2
@@ -128,5 +136,79 @@ class CPU:
                 self.alu("MUL", operand_a, operand_b)
                 self.pc += 3
 
+            elif instructionRegister == ADD:
+                self.alu("ADD", operand_a, operand_b)
+                self.pc += 3
+
+            elif instructionRegister == POP:
+
+                #get the stack pointer
+                sp = self.reg[7]
+
+                #get register num to put value in
+                regNum = self.ram[self.pc + 1]
+
+                #use stack pointer to get the value
+                value = self.ram[sp]
+
+                #put the value into the given register
+                self.reg[regNum] = value
+
+                #increement our stack pointer
+                self.reg[7] += 1
+
+                #incremenet program counter
+                self.pc += 2
+
+                #print(f"Popping {self.reg[regNum]} off the stack and into register at: {regNum}")
+               
+               
+
+            elif instructionRegister == PUSH:
+                #decrement stack pointer
+                self.reg[7] -= 1
+
+                #get register num
+                regNum = self.ram[self.pc + 1]
+
+                #get value from the given register
+                value = self.reg[regNum]
+
+                #put the value at the stack pointer address
+                sp = self.reg[7]
+                self.ram[sp] = value
+
+                #increment program counter
+                self.pc += 2
+                
+                #print(f"Pushing {self.reg[regNum]} onto the stack at: {sp}")
+
+            elif instructionRegister == CALL:
+                #get register number
+                regNum = self.ram[self.pc + 1]
+                
+                #get the address to jump to, from the register
+                address = self.reg[regNum]
+
+                #push command after CALL onto the stack
+                returnAddress = self.pc + 2
+
+                self.reg[7] -= 1 #decrement stack pointer
+                sp = self.reg[7]
+                self.ram[sp] = returnAddress #put return address onto the stack
+
+                #then look at the register, and jump to that address
+                self.pc = address
+
+            elif instructionRegister == RET:
+                #pop the return address off the stack
+                sp = self.reg[7]
+                returnAddress = self.ram[sp]
+                self.reg[7] += 1
+
+                #go to the return address, and set the pc to return address
+                self.pc = returnAddress 
+
             else:
                 self.pc += 1
+           
