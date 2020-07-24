@@ -16,6 +16,9 @@ JEQ = 0b01010101
 JNE = 0b01010110
 JMP = 0b01010100
 
+#stretch
+AND = 0b10101000
+
 class CPU:
     """Main CPU class."""
 
@@ -86,6 +89,11 @@ class CPU:
             #if reg_a greater than b
             elif self.reg[reg_a] > self.reg[reg_b]:
                 self.flags = 0b00000010
+
+        #stretch goals 
+        elif op == "AND":
+            self.reg[reg_a] = reg_a & reg_b
+
             
         else:
             raise Exception("Unsupported ALU operation")
@@ -131,129 +139,104 @@ class CPU:
         
 
         while self.running:
-            operand_a = self.ram_read(self.pc + 1)
-            operand_b = self.ram_read(self.pc + 2)
             instructionRegister = self.ram[self.pc]
 
-            if instructionRegister == LDI:
-                self.ldi(operand_a, operand_b)
-                self.pc += 3
-
-                #print('Writing ', operand_b, 'to register num', operand_a)
-
-            elif instructionRegister == PRN:
-                self.prn(operand_a)
-                self.pc += 2
-
-            elif instructionRegister == HLT:
+            if instructionRegister == HLT:
                 self.hlt()
                 self.pc += 1
+            else:
 
-            elif instructionRegister == MUL:
-                self.alu("MUL", operand_a, operand_b)
-                self.pc += 3
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
 
-            elif instructionRegister == ADD:
-                self.alu("ADD", operand_a, operand_b)
-                self.pc += 3
+                if instructionRegister == LDI:
+                    self.ldi(operand_a, operand_b)
+                    self.pc += 3
 
-            elif instructionRegister == POP:
+                    #print('Writing ', operand_b, 'to register num', operand_a)
 
-                #get the stack pointer
-                sp = self.reg[7]
+                elif instructionRegister == PRN:
+                    self.prn(operand_a)
+                    self.pc += 2
 
-                #get register num to put value in
-                regNum = self.ram[self.pc + 1]
+                elif instructionRegister == MUL:
+                    self.alu("MUL", operand_a, operand_b)
+                    self.pc += 3
 
-                #use stack pointer to get the value
-                value = self.ram[sp]
+                elif instructionRegister == ADD:
+                    self.alu("ADD", operand_a, operand_b)
+                    self.pc += 3
 
-                #put the value into the given register
-                self.reg[regNum] = value
+                elif instructionRegister == POP:
 
-                #increement our stack pointer
-                self.reg[7] += 1
+                    #get the stack pointer
+                    sp = self.reg[7]
 
-                #incremenet program counter
-                self.pc += 2
-
-                #print(f"Popping {self.reg[regNum]} off the stack and into register at: {regNum}")
-               
-               
-
-            elif instructionRegister == PUSH:
-                #decrement stack pointer
-                self.reg[7] -= 1
-
-                #get register num
-                regNum = self.ram[self.pc + 1]
-
-                #get value from the given register
-                value = self.reg[regNum]
-
-                #put the value at the stack pointer address
-                sp = self.reg[7]
-                self.ram[sp] = value
-
-                #increment program counter
-                self.pc += 2
-                
-                #print(f"Pushing {self.reg[regNum]} onto the stack at: {sp}")
-
-            elif instructionRegister == CALL:
-                #get register number
-                regNum = self.ram[self.pc + 1]
-                
-                #get the address to jump to, from the register
-                address = self.reg[regNum]
-
-                #push command after CALL onto the stack
-                returnAddress = self.pc + 2
-
-                self.reg[7] -= 1 #decrement stack pointer
-                sp = self.reg[7]
-                self.ram[sp] = returnAddress #put return address onto the stack
-
-                #then look at the register, and jump to that address
-                self.pc = address
-
-            elif instructionRegister == RET:
-                #pop the return address off the stack
-                sp = self.reg[7]
-                returnAddress = self.ram[sp]
-                self.reg[7] += 1
-
-                #go to the return address, and set the pc to return address
-                self.pc = returnAddress 
-
-            elif instructionRegister == JMP:
-                #get register num
-                regNum = self.ram[self.pc + 1]
-
-                #get the address to jump to
-                address = self.reg[regNum]
-
-                #set program counter to the address
-                self.pc = address
-
-            elif instructionRegister == CMP:
-                self.alu("CMP", operand_a, operand_b)
-                self.pc += 3
-            
-            elif instructionRegister == JEQ:
-                if self.flags == 0b00000001:
-                     #get register num
+                    #get register num to put value in
                     regNum = self.ram[self.pc + 1]
 
-                    #get the address to jump to
+                    #use stack pointer to get the value
+                    value = self.ram[sp]
+
+                    #put the value into the given register
+                    self.reg[regNum] = value
+
+                    #increement our stack pointer
+                    self.reg[7] += 1
+
+                    #incremenet program counter
+                    self.pc += 2
+
+                    #print(f"Popping {self.reg[regNum]} off the stack and into register at: {regNum}")
+                
+                
+
+                elif instructionRegister == PUSH:
+                    #decrement stack pointer
+                    self.reg[7] -= 1
+
+                    #get register num
+                    regNum = self.ram[self.pc + 1]
+
+                    #get value from the given register
+                    value = self.reg[regNum]
+
+                    #put the value at the stack pointer address
+                    sp = self.reg[7]
+                    self.ram[sp] = value
+
+                    #increment program counter
+                    self.pc += 2
+                    
+                    #print(f"Pushing {self.reg[regNum]} onto the stack at: {sp}")
+
+                elif instructionRegister == CALL:
+                    #get register number
+                    regNum = self.ram[self.pc + 1]
+                    
+                    #get the address to jump to, from the register
                     address = self.reg[regNum]
 
-                    #set program counter to the address
+                    #push command after CALL onto the stack
+                    returnAddress = self.pc + 2
+
+                    self.reg[7] -= 1 #decrement stack pointer
+                    sp = self.reg[7]
+                    self.ram[sp] = returnAddress #put return address onto the stack
+
+                    #then look at the register, and jump to that address
                     self.pc = address
-                else:
-                    self.pc += 2
-            elif instructionRegister == JNE:
-                if not self.flags == 0b00000001:
+
+                elif instructionRegister == RET:
+                    #pop the return address off the stack
+                    sp = self.reg[7]
+                    returnAddress = self.ram[sp]
+                    self.reg[7] += 1
+
+                    #go to the return address, and set the pc to return address
+                    self.pc = returnAddress 
+
+                elif instructionRegister == JMP:
                     #get register num
                     regNum = self.ram[self.pc + 1]
 
@@ -262,10 +245,43 @@ class CPU:
 
                     #set program counter to the address
                     self.pc = address
+
+                elif instructionRegister == CMP:
+                    self.alu("CMP", operand_a, operand_b)
+                    self.pc += 3
+                
+                elif instructionRegister == JEQ:
+                    if self.flags == 0b00000001:
+                        #get register num
+                        regNum = self.ram[self.pc + 1]
+
+                        #get the address to jump to
+                        address = self.reg[regNum]
+
+                        #set program counter to the address
+                        self.pc = address
+                    else:
+                        self.pc += 2
+                elif instructionRegister == JNE:
+                    if not self.flags == 0b00000001:
+                        #get register num
+                        regNum = self.ram[self.pc + 1]
+
+                        #get the address to jump to
+                        address = self.reg[regNum]
+
+                        #set program counter to the address
+                        self.pc = address
+                    else:
+                        self.pc += 2
+
+                #STRETCH GOALS
+                elif instructionRegister == AND:
+                    self.alu("AND", operand_a, operand_b)
+                    
+                    self.pc += 3
                 else:
-                    self.pc += 2
-            else:
-                self.pc += 1
+                    self.pc += 1
         print("-----------")
         print(self.ram)
            
